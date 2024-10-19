@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgres"
   url      = env("DATABASE_URL")
 }
 
@@ -16,34 +16,60 @@ enum Role {
 }
 
 model User {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String?
-  email String? @unique
-  emailVerified Boolean?
-  image String?
-  hashedPassword String?
-  resetToken String?
+  id               Int       @id @default(autoincrement())
+  name             String?
+  email            String?   @unique
+  emailVerified    Boolean?
+  image            String?
+  hashedPassword   String?
+  resetToken       String?
   resetTokenExpiry DateTime?
-  role Role @default(user)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  accounts Account[]
+  role             Role      @default(user)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  accounts         Account[]
+  Poll             Poll[]
 }
 
 model Account {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  type String
-  provider String
+  id                Int     @id @default(autoincrement())
+  type              String
+  provider          String
   providerAccountId String
-  refresh_token String? @db.String
-  access_token String? @db.String
-  expires_at Int?
-  token_type String?
-  scope String?
-  id_token String? @db.String
-  session_state  String? 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @db.ObjectId
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            Int
 
   @@unique([provider, providerAccountId])
+}
+
+model Poll {
+  id        Int        @id @default(autoincrement())
+  title     String 
+  questions Question[] 
+  createdAt DateTime   @default(now())
+  createdBy Int 
+  creator   User       @relation(fields: [createdBy], references: [id]) 
+}
+
+model Question {
+  id        Int          @id @default(autoincrement())
+  pollId    Int 
+  poll      Poll         @relation(fields: [pollId], references: [id])
+  question  String 
+  type      QuestionType 
+  options   String? 
+  responses String? 
+}
+
+enum QuestionType {
+  MCQ
+  TEXT
+  WORDCLOUD
 }

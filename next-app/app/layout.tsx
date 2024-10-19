@@ -4,6 +4,7 @@ import { AuthContext } from '@/context/AutxContext';
 
 import './globals.css';
 import { CONFIG } from './config';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,7 +17,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <body>
-        <AuthContext>{children}</AuthContext>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <AuthContext>{children}</AuthContext>
+        </ThemeProvider>
       </body>
     </html>
   );

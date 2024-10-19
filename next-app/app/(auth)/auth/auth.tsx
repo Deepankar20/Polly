@@ -1,13 +1,12 @@
 'use client';
 import { useCallback, useState, useEffect } from 'react';
-import { useForm, FieldValues, SubmitHandler, set } from 'react-hook-form';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { motion, useAnimation, useAnimationControls } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
 
 import SocialLogin from './components/SocialLogin';
 import Divider from './components/Divider';
-import Input from '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { emailValidation, nameValidation, passwordValidation } from './validation/validation';
 import Loading from '@/components/ui/Loading';
@@ -32,24 +31,15 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showMessage, setShowMessage] = useState<IShowMessage | null>(null);
   const [bottomMessage, setBottomMessage] = useState<IShowMessage | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const controls = useAnimationControls();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
-
-  const {
-    register,
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-    clearErrors,
-  } = useForm<FieldValues>({
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-    },
-  });
 
   const {
     loading,
@@ -57,7 +47,7 @@ const Auth = () => {
     signin,
     passwordReset,
     activateUser,
-  } = useAuth(setError);
+  } = useAuth(setErrors);
 
   const slideOut = async () => {
     await controls.start({ x: 500, opacity: 0, transition: { duration: 0.5 } });
@@ -73,7 +63,7 @@ const Auth = () => {
   const isReset = variant === VARIANTS.reset;
 
   const changeVariant = (variant: Variant) => {
-    clearErrors();
+    setErrors({});
     setShowMessage(null);
     slideOut();
     setVariant(variant);
@@ -83,7 +73,7 @@ const Auth = () => {
     try {
       const data = await activateUser(token);
       setBottomMessage({ type: 'success', message: data.message });
-      setValue('email', data.email);
+      setFormData({ ...formData, email: data.email });
     } catch (error: any) {
       setBottomMessage({ type: 'error', message: error?.message || 'Error' });
     }
@@ -95,23 +85,38 @@ const Auth = () => {
     }
   }, [token]);
 
-  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+  };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setBottomMessage(null);
-    if (isRegister) {
-      try {
-        const message = await registerUser(data);
-        setShowMessage({ type: 'success', message });
-      } catch (error: any) {
-        setShowMessage({ type: 'error', message: error?.message || 'Error' });
-      }
+
+    const currentErrors: { [key: string]: string } = {};
+    if (isRegister && !nameValidation(formData.name)) {
+      currentErrors.name = 'Invalid name';
     }
-    if (isLogin) {
-      await signin(data);
+    if (!emailValidation(formData.email)) {
+      currentErrors.email = 'Invalid email';
     }
-    if (isReset) {
+    if (isRegister && !passwordValidation(formData.password)) {
+      currentErrors.password = 'Invalid password';
+    }
+    setErrors(currentErrors);
+
+    if (Object.keys(currentErrors).length === 0) {
       try {
-        const message = await passwordReset(data);
-        setShowMessage({ type: 'success', message });
+        if (isRegister) {
+          const message = await registerUser(formData);
+          setShowMessage({ type: 'success', message });
+        } else if (isLogin) {
+          await signin(formData);
+        } else if (isReset) {
+          const message = await passwordReset(formData);
+          setShowMessage({ type: 'success', message });
+        }
       } catch (error: any) {
         setShowMessage({ type: 'error', message: error?.message || 'Error' });
       }
@@ -128,28 +133,28 @@ const Auth = () => {
           <Divider />
         </FadeIn>
 
-        <form action="" onSubmit={handleSubmit(onSubmit)} className="py-6">
+        <form action="" onSubmit={onSubmit} className="py-6">
           <FadeIn delay={0.8} direction="left">
             {isRegister && (
               <Input
                 label="Name"
-                register={register}
+                value={formData.name}
                 id="name"
                 type="text"
+                onChange={handleInputChange}
                 errors={errors}
                 className="mb-6"
-                validation={nameValidation}
               />
             )}
 
             <Input
               label="Email"
-              register={register}
+              value={formData.email}
               id="email"
               type="email"
               className={`${showMessage ? '' : 'mb-6'}`}
+              onChange={handleInputChange}
               errors={errors}
-              validation={emailValidation}
             />
 
             {showMessage && (
@@ -166,11 +171,11 @@ const Auth = () => {
               <div className="relative flex flex-col items-end">
                 <Input
                   label="Password"
-                  register={register}
+                  value={formData.password}
                   type={showPassword ? 'text' : 'password'}
                   id="password"
+                  onChange={handleInputChange}
                   errors={errors}
-                  validation={isRegister ? passwordValidation : {}}
                 />
 
                 <div>
