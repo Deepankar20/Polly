@@ -21,19 +21,47 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function Page() {
   const [pollName, setPollName] = useState<string>();
+  const [polls, setPolls] = useState([]);
+  const { data, status } = useSession();
+
+  const router = useRouter();
+  
 
   useEffect(() => {
-    async function fetchPolls(){
-        try {
-            const polls = await fetch("http://localhost:3000/api/poll")
-        } catch (error) {
-            
+    async function fetchPolls() {
+      try {
+        if (!data) {
+          return;
         }
+
+        const res = await fetch(`http://localhost:3000/api/auth/poll?userId=${data.user.id}`);
+        const polls = await res.json();
+
+
+        setPolls(polls.data);
+      } catch (error) {}
     }
-  }, []);
+
+    fetchPolls();
+  }, [data]);
+
+  async function createPoll() {
+    try {
+      if (!data) {
+        return;
+      }
+      const poll = await fetch('http://localhost:3000/api/auth/poll', {
+        method: 'POST',
+        body: JSON.stringify({ createdBy: data.user.id as string, pollName }),
+      });
+
+    } catch (error) {}
+  }
 
   return (
     <div className="mx-auto my-[25vh] md:w-1/2">
@@ -50,38 +78,39 @@ export default function Page() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Input id="name" placeholder="enter name here" className="col-span-3" />
+              <Input
+                id="name"
+                onChange={(e) => setPollName(e.target.value)}
+                placeholder="enter name here"
+                className="col-span-3"
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Save changes</Button>
+            <Button onClick={createPoll}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Table>
         <TableCaption>A list of your created Polls.</TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[100px]">SR</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Method</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
-          </TableRow>
-        </TableHeader>
+
         <TableBody>
-          <TableRow>
-            <TableCell className="font-medium">INV001</TableCell>
-            <TableCell>Paid</TableCell>
-            <TableCell>Credit Card</TableCell>
-            <TableCell className="text-right">$250.00</TableCell>
-          </TableRow>
-          <TableRow>
-            <TableCell className="font-medium">INV001</TableCell>
-            <TableCell>Paid</TableCell>
-            <TableCell>Credit Card</TableCell>
-            <TableCell className="text-right">$250.00</TableCell>
-          </TableRow>{' '}
+          {polls.map((poll: { title: string; id: number }, i) => {
+            return (
+              <div
+                onClick={() => {
+                  router.push(`/poll?pollId=${poll.id}`);
+                }}
+                key={i}
+              >
+                <TableRow>
+                  <TableCell className="font-medium">{i + 1}</TableCell>
+                  <TableCell>{poll.title}</TableCell>
+                </TableRow>
+              </div>
+            );
+          }, [])}
           <TableRow>
             <TableCell className="font-medium">INV001</TableCell>
             <TableCell>Paid</TableCell>

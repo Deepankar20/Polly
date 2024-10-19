@@ -13,6 +13,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useState } from 'react';
+import { useSocket } from '@/context/SocketContext';
+import { useSearchParams } from 'next/navigation';
 
 interface IQuestionProps {
   question: string;
@@ -22,6 +24,14 @@ interface IQuestionProps {
 
 export default function Page() {
   const [questionType, setQuestionType] = useState('');
+
+  const searchParams = useSearchParams();
+
+  const pollId = searchParams.get('pollId');
+
+  const { startInteraction, ques } = useSocket();
+
+  // console.log('ques is : ', ques);
 
   const [Questions, setQuestions] = useState<IQuestionProps[]>();
   const [options, setOptions] = useState([{ id: 1, value: '' }]);
@@ -159,7 +169,17 @@ export default function Page() {
                 })}
             </div>
 
-            <Button >Start Interaction</Button>
+            <Button
+              onClick={() => {
+                console.log('hi');
+                const ques = { ...interaction, pollId };
+                console.log(ques);
+
+                startInteraction(ques);
+              }}
+            >
+              Start Interaction
+            </Button>
           </div>
         )}
       </div>

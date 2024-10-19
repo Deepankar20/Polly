@@ -1,7 +1,13 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 interface SocketUserMapping {
   [key: string]: string; // key is socket.id, value is the email
+}
+interface data {
+  pollId: string;
+  questionType?: string;
+  options?: string;
+  question: string;
 }
 
 class SocketService {
@@ -19,6 +25,7 @@ class SocketService {
   }
 
   private users: SocketUserMapping = {};
+  private adminSocketId: string = "";
 
   public initListeners() {
     const io = this.io;
@@ -34,26 +41,38 @@ class SocketService {
         console.log(this.users);
       }
 
-      socket.on("event:userJoined", (data) => {});
+      socket.on("event:userJoined", (data: string) => {
+        console.log("inside socket server", data);
 
-      socket.on("event:pollStart", (data) => {});
-
-      socket.on("event:userAnswer", (data) => {});
-
-
-
-      socket.on("event:message", (data) => {
-        const { from, to, content } = JSON.parse(data);
-        const recieverSocketID = this.users[to.email];
-
-        io.to(recieverSocketID).emit("event:message:reply", data);
+        // socket.join(userData.pollId);
       });
 
-      socket.on("event:typing", (data) => {
-        const { to, isTyping } = data;
-        const recieverSocketID = this.users[to.email];
+      socket.on("event:startInteraction", (data: string) => {
+        const pollData = JSON.parse(data);
+        console.log(pollData);
 
-        io.to(recieverSocketID).emit("event:typing:back", data.isTyping);
+        const { pollId, questionType, question } = pollData;
+        this.adminSocketId = socket.id;
+        let options;
+
+        if (questionType === "MCQ") {
+          options = pollData.options;
+        }
+
+        const quesData = JSON.stringify({
+          pollId,
+          questionType,
+          question,
+          options,
+        });
+
+        io.to(pollId).emit("reply:pollStart", quesData);
+      });
+
+      socket.on("event:userAnswer", (data) => {
+        const { response, questionType, pollId } = JSON.parse(data);
+
+        io.to(this.adminSocketId).emit("reply:userResponse", data);
       });
     });
   }

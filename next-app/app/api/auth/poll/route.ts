@@ -5,23 +5,16 @@ import prisma from '@/app/libs/prismaDb';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    // console.log(body);
 
-    const { title, Questions, createdBy } = body;
+    const { pollName, createdBy } = body;
+    console.log(pollName, createdBy);
 
-    const newPoll = prisma.poll.create({
+    const newPoll = await prisma.poll.create({
       data: {
-        title,
+        title: pollName,
         createdBy,
-        questions: {
-          create: Questions.map((q: any) => ({
-            question: q.question,
-            type: q.type,
-            options: q.type === 'MCQ' ? q.options : undefined,
-            responses: q.type !== 'MCQ' ? [] : undefined,
-          })),
-        },
       },
-      include: { questions: true },
     });
 
     if (!newPoll) {
@@ -44,18 +37,11 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId');
-    let id;
-
-    if (userId) {
-      id = parseInt(userId);
-    }
+    console.log('userid', userId);
 
     const polls = await prisma.poll.findMany({
       where: {
-        createdBy: id,
-      },
-      include: {
-        questions: true,
+        createdBy: userId as string,
       },
     });
 
@@ -66,5 +52,53 @@ export async function GET(req: Request) {
     return NextResponse.json({ data: polls, message: 'Fetched Polls' }, { status: 201 });
   } catch (error) {
     return NextResponse.json({ data: null, message: 'Internal Server Error' }, { status: 501 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json();
+
+    const { pollId, questions } = body;
+
+    if (!pollId || !questions || !Array.isArray(questions)) {
+      return NextResponse.json({ message: 'Invalid pollId or questions array' }, { status: 400 });
+    }
+
+    const poll = await prisma.poll.findUnique({
+      where: { id: pollId },
+    });
+
+    if (!poll) {
+      return NextResponse.json({ message: 'Poll not found' }, { status: 404 });
+    }
+
+    await prisma.question.deleteMany({
+      where: { pollId: pollId },
+    });
+
+    const updatedQuestions = await prisma.question.createMany({
+      data: questions.map((q: any) => ({
+        pollId: pollId,
+        question: q.question,
+        type: q.type,
+        options: q.options ? JSON.stringify(q.options) : null,
+      })),
+    });
+
+    const updatedPoll = await prisma.poll.findUnique({
+      where: { id: pollId },
+      include: {
+        questions: true,
+      },
+    });
+
+    return NextResponse.json(
+      { data: updatedPoll, message: 'Poll and questions updated successfully' },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error('Error updating poll:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }

@@ -1,12 +1,15 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useIsLogedIn } from '../admin/hooks/useIsLogedIn';
 
 export default function Home() {
   // Check if user is logged in | Add redirect logic if needed
   const logedIn = useIsLogedIn();
+  const { data } = useSession();
+  
+  
 
   return (
     <div>

@@ -16,7 +16,7 @@ enum Role {
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
+  id               String    @id @default(uuid())
   name             String?
   email            String?   @unique
   emailVerified    Boolean?
@@ -32,7 +32,7 @@ model User {
 }
 
 model Account {
-  id                Int     @id @default(autoincrement())
+  id                String  @id @default(uuid())
   type              String
   provider          String
   providerAccountId String
@@ -44,28 +44,28 @@ model Account {
   id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId            Int
+  userId            String
 
   @@unique([provider, providerAccountId])
 }
 
 model Poll {
   id        Int        @id @default(autoincrement())
-  title     String 
-  questions Question[] 
+  title     String
+  questions Question[]
   createdAt DateTime   @default(now())
-  createdBy Int 
-  creator   User       @relation(fields: [createdBy], references: [id]) 
+  createdBy String
+  creator   User       @relation(fields: [createdBy], references: [id])
 }
 
 model Question {
   id        Int          @id @default(autoincrement())
-  pollId    Int 
+  pollId    Int
   poll      Poll         @relation(fields: [pollId], references: [id])
-  question  String 
-  type      QuestionType 
-  options   String? 
-  responses String? 
+  question  String
+  type      QuestionType
+  options   String?
+  responses String?
 }
 
 enum QuestionType {
