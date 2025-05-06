@@ -171,9 +171,7 @@ export default function Page() {
 
             <Button
               onClick={() => {
-                console.log('hi');
                 const ques = { ...interaction, pollId };
-                console.log(ques);
 
                 startInteraction(ques);
               }}

@@ -36,8 +36,6 @@ interface IQues {
 }
 
 interface ISocketContext {
-  sendMessage: (msg: Imsg) => any;
-  typing: (data: Ityping) => any;
   messages: any;
   isTyping: boolean | undefined;
   startInteraction: (question: IQues) => any;
@@ -82,28 +80,9 @@ const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     [socket],
   );
 
-  const sendMessage: ISocketContext['sendMessage'] = useCallback(
-    (msg) => {
-      if (socket) {
-        const { from, to, content, timestamp } = msg;
-
-        setMessages((prev) => [...prev, { from, to, content, timestamp }]);
-        socket.emit('event:message', JSON.stringify(msg));
-      }
-    },
-    [socket],
-  );
-
-  const typing: ISocketContext['typing'] = useCallback(
-    (data: Ityping) => {
-      if (socket) {
-        socket.emit('event:typing', data);
-      }
-    },
-    [socket],
-  );
-
   const onReplyPollStart = useCallback((ques: string) => {
+    console.log('server to client', ques);
+
     setQues(JSON.parse(ques));
   }, []);
 
@@ -123,9 +102,7 @@ const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <SocketContext.Provider
-      value={{ sendMessage, messages, typing, isTyping, startInteraction, ques, userJoin }}
-    >
+    <SocketContext.Provider value={{ messages, isTyping, startInteraction, ques, userJoin }}>
       {children}
     </SocketContext.Provider>
   );

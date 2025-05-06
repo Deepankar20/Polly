@@ -30,7 +30,6 @@ export default function Page() {
   const { data, status } = useSession();
 
   const router = useRouter();
-  
 
   useEffect(() => {
     async function fetchPolls() {
@@ -41,7 +40,6 @@ export default function Page() {
 
         const res = await fetch(`http://localhost:3000/api/auth/poll?userId=${data.user.id}`);
         const polls = await res.json();
-
 
         setPolls(polls.data);
       } catch (error) {}
@@ -59,12 +57,11 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({ createdBy: data.user.id as string, pollName }),
       });
-
     } catch (error) {}
   }
 
   return (
-    <div className="mx-auto my-[25vh] md:w-1/2">
+    <section className="mx-auto my-[25vh] md:w-1/2">
       <Dialog>
         <DialogTrigger asChild>
           <Button variant="outline" className="mb-[2vh]">
@@ -119,6 +116,6 @@ export default function Page() {
           </TableRow>
         </TableBody>
       </Table>
-    </div>
+    </section>
   );
 }
